@@ -1,6 +1,8 @@
 \documentclass[12pt,twoside]{article}
 \usepackage{jmlda}
 \usepackage{hyperref}
+\usepackage{bbm}
+\usepackage{amssymb}
 %\NOREVIEWERNOTES
 \title
     [] % Краткое название; не нужно, если полное название влезает в~колонтитул
@@ -29,7 +31,7 @@
 \maketitle
 %\linenumbers
 \section{Введение}
-\paragraph{}
+\subsection{}
 	В этой работе мы хотим научиться эффективно классифицировать атомы, для того чтобы предсказывать взаимодействие молекул. Это важно во многих вычислительных методах в медицине и биологии, например, виртуальный скрининг при разработке новых лекарств \cite{article2}. При этом молекулы представимы в виде трёхмерных молекулярных графов, что позволяет использовать методы машинного обучения на графах.
 	
 	“В последние годы были предложены несколько алгоритмов. Самые ранние работы основывались на простых геометрических соображениях, использующих длины связей и валентные углы \cite{article3}. Позже стали учитывать функциональные группы \cite{article4}, гибридизацию и заряд атома \cite{article5,article6,article7,article8}. Чтобы уменьшить влияние ошибок в экспериментальном определении структуры были использованы некоторые подходы: максимальное взвешенное паросочетание \cite{article9,article10}, поиск структуры Льюиса \cite{article11}, максимизация \cite{article12} или минимизация \cite{article13,article14} некой метрики.”
@@ -40,9 +42,83 @@
 	
 	Сравниваться данный алгоритм будет с алгоритмом, реализованным в библиотеке по распознаванию типов атомов Knodle \cite{article1}, основанным на мультиклассовой классификации при помощи метода опорных векторов.
 	
+\subsection{Обзор функций, используемых для конволюции}
+f - произвольная функция, например:
+\begin{itemize}
+\item $f(z) = \frac{1}{1+e^{-z}}$
+\item $f(z) = z I(z > 0)$
+\item $f(z) = log(1+exp(x))$
+\item для a < 0 (подбирается в ходе обучения сети) 
+	\begin{equation*}
+	f(z) = 
+	 \begin{cases}
+		 z &\text{z > 0}\\
+		 az &\text{z < 0}
+	 \end{cases}
+	\end{equation*}
+\end{itemize}
+g - произвольная коммутативная функция, например:
+\begin{itemize}
+\item $g(z_1,\dots, z_n) = \sum{z_i}$
+\item $g(z_1,\dots, z_n) = \prod{z_i}$
+\item $g(z_1,\dots, z_n) = \max{z_i}$
+\item $g(z_1,\dots, z_n) = \frac{\sum{z_i}}{n}$
+\end{itemize}
+\paragraph{Обзор представления молекул}
+\begin{itemize}
+\item Z-matrix
+\item матрица типов связи, матрица минимальных расстояний, матрица состояния в одном кольце вершин
+\item 
+\end{itemize}
+
 \section{Постановка задачи}
-1. 15000 молекул в формате mol2 из базы данных PDBBindCN.
-2. 
+\subsection{Описание выборки}
+15000 молекул в формате mol2 из базы данных PDBBindCN. Для каждой молекулы определена матрица смежности G и матрица расстояний D (длины кратчайших путей между атомами). Так же имеются матрица длин связей, углов и двугранных углов. Для каждого атома определены следующие дескрипторы:
+\begin{itemize}
+\item название элемента
+\item электроотрицательность
+\item гибридизация
+\item тип
+\item тип2
+\item включение в кольце
+\item смешанное произведение векторов связи этой вершины
+\end{itemize}
+
+На основе этих данных молекулу можно описать матрицей NxD0 (каждая строчка соответствует атому, D0 - количество признаков) и несколькими матрицами NxN (для кажого парного признака своя матрица).
+
+\subsection{Архитектура сети}
+	В сети будет два вида слоёв: атомный и парный. Первый суть 2-мерная матрица, где каждому атому соответствует строка. Второй слой суть 3-мерная матрица, где каждой паре атомов соответствует строка.
+	
+	\textbf{Определение 2.1} Пусть x - атомный слой, a - атом, тогда $A^x_a$ - значение атома a в слое x. Аналогично, y - парный слой, $(a, b)$ - пара атомов,тогда $P^y_{(a, b)}$ - значение пары $(a, b)$ слое y.
+	
+	Пусть $f(z) = z I(z > 0)$, $g(z_1,..., z_n) = \sum{z_i}$, $x, x_1,...,x_n$ - слои. Параметры: $c, w_1,\dots,w_n$. Опишем несколько операций, с помощью которых можно получать одни слои из других:
+	\begin{itemize}
+	\item $(A\rightarrow A)$: $A^y_a = f(с+\sum_{i=1}^n {w_i A^{x_i}_a})$
+	\item $(P\rightarrow P)$: $P^y_{(a, b)} = f(с+\sum_{i=1}^n {w_i P^{x_i}_{(a, b)}})$
+	\item $(P\rightarrow A)$: $A^y_a = g(f(c + w_1 P^x_{(a, b)}), f(c + w_1 P^x_{(a, c)}), f(c + w_1 P^x_{(a, d)}),...)$, где g вычисляется для всех пар, содержащих a
+	\item $(A\rightarrow P)$: $P^y_{(a, b)} = g(f(c + w_1 A^x_a + w_2 A^x_b), f(c + w_1 A^x_b + w_2 A^x_a)))$
+	\end{itemize}
+	
+	\textbf{Лемма 1} Эти операции поддерживают следующий инвариант: если применить ко входу перестановку $\sigma$, то $\forall$ слоёв x, y: $A^x, P^y$ переставляются согласно перестановке $\sigma$
+	
+	Опишем, как с помощью этих операций получить из k-ого атомного и парного слоёв (k+1)-ые. А именно, пусть есть $A^k$ и $P^k$. Сначала получим промежуточные слои $$A^{k'} = (A\rightarrow A)(A^k), A^{k''}=(P\rightarrow A)(P^k), P^{k'}=(A \rightarrow P)(A^k), P^{k''}=(P\rightarrow P)(P^k),$$ и уже используя их получим (k+1)-ые слои: $$A^{k+1} = (A\rightarrow A)(A^{k'}, A^{k''}), P^{k+1} = (P\rightarrow P)(P^{k'}, P^{k''})$$
+Проделав эту процедуру несколько раз, получим финальный атомный слой A.
+
+\subsubsection{Параметры сети}
+Параметрами сети являются:
+\begin{itemize}
+\item параметры функции f: $c, w_1,\dots,w_n$
+\item глубина сети
+\item глубина конволюции (?непонятно что это)
+\item способ получения молекулярных признаков
+\item метод оптимизации параметров
+\end{itemize}
+\subsection{Формальная постановка задачи}
+	Пусть  $\mathfrak{G} = \{\mathfrak{s_1},...,\mathfrak{s_m}\}$ - множество атомов в различных молекулах. Пусть $\textbf{y} = \{y_1,...,y_\}$ - типы атомов.
+
+	Пусть $G = \{g_1,...,g_n\}$ - набор функций, таких что $\forall i \forall j$ $g_j$ отображает $\mathfrak{s_i}$ в (i, j) элемент матрицы X: $$g_j: (b_j, \mathfrak{s_i})\rightarrow x_{ij} \in \mathbb{R}^1,$$ где $b_j$ - набор параметров для $g_j$.
+	
+	Определим $$f(w, X) = \frac{1}{1+exp(-Xw)},$$ где оптимальные параметры $\hat{w}$ минимизируют функцию потерь $$\hat{w}=arg\min\limits_{w} S(w|f, X, y),$$ где $$S(w|f, X, y)=-ln(\sum_{i=1}^m {y_i logf(x_i, w) + (1-y_i)log(1-f(x_i, w))})$$
 
 \begin{thebibliography}{1}
 \bibitem{article1}
@@ -109,6 +185,18 @@
     \BibAuthor{Steven Kearnes, Kevin McCloskey, Marc Berndl, Vijay Pande, Patrick Riley}
     \BibTitle{Molecular Graph Convolutions: Moving Beyond Fingerprints}~//
     \BibJournal{}, 2016
+\bibitem{article17}
+    \BibAuthor{Duvenaud DK, Maclaurin D, Iparraguirre J, Bombarell R, Hirzel T, Aspuru-Guzik A, Adams RP}
+    \BibTitle{Convolutional networks on graphs for learning molecular fingerprints}~//
+    \BibJournal{Advances in neural information processing systems, pp 2224–2232}, 2015
+\bibitem{article18}
+    \BibAuthor{Lusci A, Pollastri G, Baldi P}
+    \BibTitle{Deep architectures and deep learning in chemoinformatics: the prediction of aqueous solubility for drug-like molecules}~//
+    \BibJournal{J Chem Inf Model 53(7): 1563–1575}, 2013	
+\bibitem{article19}
+    \BibAuthor{Merkwirth C, Lengauer T }
+    \BibTitle{Automatic generation of complementary descriptors with molecular graph network}~//
+    \BibJournal{J Chem Inf Model 45(5):1159–1168}, 2005
 \end{thebibliography}
 
 % Решение Программного Комитета:
