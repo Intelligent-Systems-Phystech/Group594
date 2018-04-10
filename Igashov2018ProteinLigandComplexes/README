@@ -1,0 +1,7 @@
+basic_experiment: пытался запускать scipy.optimize.minimize — очень долго и возвращает ошибку в итоге
+
+liblinear: пользуюсь L2-regularized logistic regression (флаг -s 0), данные лежат в папке data, там же код по обработке данных
+
+Запуск liblinear: 
+	./train -s 0 -c 1024 data/ki_train
+Создается файл ki_train.model, в котором лежит оптимизированный вектор w
