@@ -1,0 +1,178 @@
+\documentclass[12pt,twoside]{article}
+\usepackage{jmlda}
+\usepackage{hyperref}
+\usepackage{bbm}
+\usepackage{amssymb}
+%\NOREVIEWERNOTES
+\title
+    [] % Краткое название; не нужно, если полное название влезает в~колонтитул
+    {Предсказание свойств и типов атомов в молекулярных графах при помощи сверточных сетей}
+\author
+    [] % список авторов для колонтитула; не нужен, если основной список влезает в колонтитул
+    {Манучарян В., Грудинин С., Кадукова М., Стрижов В., В} % основной список авторов, выводимый в оглавление
+    [Манучарян В., Грудинин С., Кадукова М., Стрижов В., В] % список авторов, выводимый в заголовок; не нужен, если он не отличается от основного
+\thanks
+    {Научный руководитель:  Стрижов~В.\,В. 
+		 Задачу поставил:  Стрижов~В.\,В.
+     Консультанты:  Грудинин~С.,~Кадукова~М.}
+\email
+    {manucharyan.va@phystec.edu}
+\organization
+    {Московский физико-технический институт (государственный университет), Москва}
+\abstract
+    {Статья посвящена определению типов атомов и валентности в молекулярных графах. В существующих на данный момент моделях не учитывается 3D структура молекулярных графов, и тип определяется с помощью цепочки условных операторов на основе предсказанной гибридизации. Статья предлагает делать это при помощи свёрточной нейронной сети, обученной на молекулярных графах. Для вычислительного эксперимента используется база данных PDBBindCN, в котором определены тип атома (около 150 классов), гибридизация атома (4 класса) и тип связи (5 классов). Результат работы нового алгоритма сравнивается с Knodle \cite{article1}.
+
+
+\bigskip
+\textbf{Ключевые слова}: \emph {машинное обучение, классификация,
+свёрточные нейронные сети, молекулярные графы}.}
+
+\begin{document}
+\maketitle
+%\linenumbers
+\section{Введение}
+\subsection{}
+	В этой работе решается задача эффективно классифицировать атомы, для предсказания взаимодействия молекул. При этом молекулы представлены \cite{} в виде трёхмерных молекулярных графов, что применяется в вычислительных методах в медицине и биологии, виртуальный скрининг при разработке новых лекарств \cite{article2}.
+	
+	Молекулярный граф - это связный неориентированный граф, в котором вершины - атомы, рёбра - химические связи. Обычно он представляется в виде планарного графа, в этой же работе граф трёхмерный. Тип атома - это <...>
+	
+	На данный момент существуют как простые модели, использующие простые геометрические соображения \cite{article3}, функциональные группы \cite{article4}, гибридизацию и заряд атома \cite{article5,article6,article7,article8}, так и модели, основанные на свёрточных нейронных сетях (cNN) на графах \cite{article15,article16,article20}. Так как тип для каждого атома зависит от его окружения, то свёртка с соседними атомами даст искомый результат.
+	
+	В данной работе предлагается <..>. Это позволяет определять тип атомов напрямую без длинной цепочки условных опреторов на основе гибридизации атома.
+	
+	Сравниваться данный алгоритм будет с алгоритмом, реализованным в библиотеке по распознаванию типов атомов Knodle \cite{article1}, основанным на мультиклассовой классификации при помощи метода опорных векторов.
+	
+\subsection{Обзор операции конволюции}
+1. Задан молекулярный граф $G$, размер фильтра $k$ и гиперпараметр n. В нём выбирается произвольный набор вершин V, где $|V|=n$. Далее для каждой вершины v из V строится "граф-фильтр" размера k. Этот граф строится по следующему принципу. Добавим в него v. Затем будем добавлять вершины на расстоянии 1 от v (но не более k), если их меньше k, то добавляем вершины на расстоянии 2 от v, b так далее, пока не наберём k вершин или пока нечего будет добавлять. Далее нормализуем каждый "граф-фильтр" и обучаем нейронную сеть на полученных векторах.\cite{article15} Но данный метод подходит скорее для определения свойств молекулы в целом, а не отдельных атомов.
+
+2. Пусть заданы граф G(V, E), и каждая веришна $v_i \in V$ ассоциирована с вектором признаков $X_i \in \mathbb{R}^m$, или $X=(X_1^T,\dots,X_n^T) \in \mathbb{R}^{n \times m}$. Определим матрицу смежности A. Тогда $A^k_{i,j}$ - количество путей длины k между $v_i$ и $v_j$, а $$\widetilde{A^k}=min\{A^k + I, 1\},$$ где min берётся поэлементно. Пусть $W_k$ - матрица весов, определим адаптивный фильтр $$\widetilde{W_k}=g \circ W_k,$$ где $\circ$ определяет поэлементное матричное уможение, а $$g = sigmoid([\widetilde{A^k}, X] \cdot Q),$$ где $[\cdot, \cdot]$ - конкатенация матриц, $Q \in M_{n+m, n}$ - матрица параметров. Таким образом фильтр будет учитывать как признаки вершин, так и соседние вершины. Теперь всё готово для определения опреации конволюции: $$L^{(k)} = (\widetilde{W_k} \circ \widetilde{A^k}) X + B_k$$, где $B_k$ - вектор смещения. Таким образом, получая на вход матрицу признаков $X\in \mathbb{R}^{n \times m}$, сеть выдаёт матрицу признаков $L = [L^{(1)},\dots,L^{(K)}] \in \mathbb{R}^{n \times mK}$, т.е. каждая вершина будет ассоциирована с вектором признаков, которые можно использовать для предсказания типов атомов.\cite{article20}
+
+\section{Постановка задачи}
+\subsection{Описание выборки}
+Выборка содержит 15000 молекул в формате mol2 из базы данных \href{http://www.pdbbind.org.cn/}{PDBBindCN}. Для каждой молекулы из базы строим матрицу смежности $G$ и матрицу расстояний $D$---длин кратчайших путей между атомами. Также строим матрицу длин связей, углов и двугранных углов. Для каждого атома определены следующие дескрипторы: название элемента, электроотрицательность, включение в кольце, смешанное произведение векторов связи этой вершины.
+
+На основе этих данных молекула описана матрицей $N\times D$ (каждая строчка соответствует атому, $D$---количество признаков) и несколькими матрицами $N\times N$, для кажого парного признака задана своя матрица.
+
+\subsection{Формальная постановка задачи}
+	Зададим  $\mathfrak{G} = \{\mathfrak{s}_1,...,\mathfrak{s}_m\}$---множество типизированных атомов, $\mathbf{y} = [y_1,...,y_m]$---типы атомов.
+
+	Пусть $G = \{g_1,...,g_{D}\}$---набор функций, $g_j$ отображает $\mathfrak{s}_i$ в $(i, j)$ элемент матрицы $X$: $$g_j: (b_j, \mathfrak{s}_i)\mapsto x_{ij} \in \mathbb{R}^1,$$ где $b_j$---набор параметров $g_j$.
+	
+	Определим модель $f$, сопостовляющую каждой строке $\mathbf{X}$ число из отрезка [0, 1]: $$f(\mathbf{w}, \mathbf{X}) = \frac{1}{1+\exp(-\mathbf{Xw})},$$ где оптимальные параметры $\hat{\mathbf{w}}$ минимизируют функцию потерь $$\hat{\mathbf{w}}=arg\min\limits_{\mathbf{w} \in \mathbb{R}^{D}} S(\mathbf{w}|f, \mathbf{X}, y),$$ где $$S(\mathbf{w}|f, \mathbf{X}, y)=-\ln\left(\sum_{i=1}^m {y_i \log f(x_i, \mathbf{w}) + (1-y_i)\log\bigl(1-f(x_i, \mathbf{w})\bigr)}\right)$$
+
+\subsubsection{Параметры сети}
+Параметрами сети являются:
+\begin{itemize}
+\item параметры функции f: $c, w_1,\dots,w_n$
+\item глубина сети
+\item глубина конволюции
+\item способ получения молекулярных признаков
+\item метод оптимизации параметров
+\end{itemize}
+
+\subsection{Архитектура сети}
+	В сети будет два вида слоёв: атомный и парный. Первый суть 2-мерная матрица, где каждому атому соответствует строка. Второй слой суть 3-мерная матрица, где каждой паре атомов соответствует строка.
+	
+	\textbf{Определение 2.1} Пусть x - атомный слой, $\mathfrak{s}$ - атом, тогда $A^x_\mathfrak{s}$ - значение атома $\mathfrak{s}$ в слое x. Аналогично, y - парный слой, $(\mathfrak{s}_1, \mathfrak{s}_2)$ - пара атомов,тогда $P^y_{(\mathfrak{s}_1, \mathfrak{s}_2)}$---значение пары $(\mathfrak{s}_1, \mathfrak{s}_1)$ слое y.
+	
+	Пусть $f(z) = z I(z > 0)$, $g(z_1,..., z_n) = \sum{z_i}$, $x, x_1,...,x_n$ - слои. Опишем несколько операций, с помощью которых можно получать одни слои из других:
+	\begin{itemize}
+	\item $(A\to A)$: $A^y_\mathfrak{s} = f(с+\sum_{i=1}^n {w_i A^{x_i}_\mathfrak{s}})$
+	\item $(P\to P)$: $P^y_{(\mathfrak{s}_1, \mathfrak{s}_1)} = f(с+\sum_{i=1}^n {w_i P^{x_i}_{(\mathfrak{s}_1, \mathfrak{s}_1)}})$
+	\item $(P\to A)$: $A^y_\mathfrak{s} = g(f(c + w_1 P^x_{(\mathfrak{s}, \mathfrak{s}_1)}), f(c + w_1 P^x_{(\mathfrak{s}, \mathfrak{s}_2)}), f(c + w_1 P^x_{(\mathfrak{s}, \mathfrak{s}_3)}),...)$, где g вычисляется для всех пар, содержащих $\mathfrak{s}$
+	\item $(A\rightarrow P)$: $P^y_{(\mathfrak{s}_1, \mathfrak{s}_1)} = g(f(c + w_1 A^x_{\mathfrak{s}_1} + w_2 A^x_{\mathfrak{s}_2}), f(c + w_1 A^x_{\mathfrak{s}_2} + w_2 A^x_{\mathfrak{s}_1})))$
+	\end{itemize}
+	
+	\textbf{Лемма 1} Эти операции поддерживают следующий инвариант: если применить ко входу перестановку $\sigma$, то $\forall$ слоёв x, y: $A^x, P^y$ переставляются согласно перестановке $\sigma$
+	
+	Опишем, как с помощью этих операций получить из $k$-ого атомного и парного слоёв $(k+1)$-ые. А именно, пусть есть $A^k$ и $P^k$. Сначала получим промежуточные слои $$A^{k'} = (A\to A)(A^k), A^{k''}=(P\to A)(P^k), P^{k'}=(A \to P)(A^k), P^{k''}=(P\to P)(P^k),$$ и уже используя их получим $(k+1)$-ые слои: $$A^{k+1} = (A\to A)(A^{k'}, A^{k''}), P^{k+1} = (P\to P)(P^{k'}, P^{k''})$$
+Проделав эту процедуру несколько раз, получим финальный атомный слой A.
+
+\begin{thebibliography}{1}
+\bibitem{article1}
+    \BibAuthor{Maria Kadukova, Sergei Grudinin}
+    \BibTitle{Knodle: A Support Vector Machines-Based Automatic Perception of Organic Molecules from 3D Coordinates}~//
+    \BibJournal{Journal of Chemical Information and Modeling, American Chemical Society}, 2016, 56 (8), pp.1410-1419.
+\bibitem{article2}
+    \BibAuthor{Bohdan Waszkowycz, David E Clark, and Emanuela Gancia}
+    \BibTitle{Outstanding challenges in protein–ligand docking and structure-based virtual screening}~//
+    \BibJournal{Wiley Interdiscip. Rev.: Comput. Mol. Sci.}, 1(2):229-259, 2011.
+\bibitem{article3}
+    \BibAuthor{Jon C Baber and Edward E Hodgkin}
+    \BibTitle{Automatic assignment of chemical connectivity to  organic m the Cambridge structural database}~//
+    \BibJournal{J. Chem. Inf. Comput. Sci.}, 32(5):401–406, 1992.
+\bibitem{article4}
+    \BibAuthor{Manfred Hendlich, Friedrich Rippmann, and Gerhard Barnickel}
+    \BibTitle{Bali: Automatic assignment of bond and atom types for protein ligands in the brookhaven protein databank}~//
+    \BibJournal{J. Chem. Inf. Comput. Sci.}, 37(4):774–778, 1997.
+\bibitem{article5}
+    \BibAuthor{Elke Lang, Claus-Wilhelm von der Lieth, and Thomas Forster}
+    \BibTitle{Automatic assignment of bond orders based on the analysis of the internal coordinates of molecular structures}~//
+    \BibJournal{Anal. Chim. Acta}, 265(2):283–289, 1992.
+\bibitem{article6}
+    \BibAuthor{Yuan Zhao, Tiejun Cheng, and Renxiao Wang}
+    \BibTitle{Automatic perception of organic molecules based on essential structural information}~//
+    \BibJournal{J. Chem. Inf. Model.}, 47(4):1379–1385, 2007.
+\bibitem{article7}
+    \BibAuthor{Daan MF van Aalten, R Bywater, John BC Findlay, Manfred Hendlich, Rob WW Hooft, and Gert Vriend}
+    \BibTitle{Prodrg, a program for generating molecular topologies and unique molecular descriptors from coordinates of small molecules}~//
+    \BibJournal{J. Comput.-Aided Mol. Des.}, 10(3):255–262, 1996.
+\bibitem{article8}
+    \BibAuthor{Qian Zhang, Wei Zhang, Youyong Li, Junmei  Wang, Liling Zhang, and Tingjun Hou}
+    \BibTitle{A rule based algorithm for automatic bond type perception}~//
+    \BibJournal{J. Cheminf.}, 4(1):1–10, 2012. 
+\bibitem{article9}
+    \BibAuthor{Paul Labute}
+    \BibTitle{On the perception of molecules from 3d atomic coordinates}~//
+    \BibJournal{J. Chem. Inf.  Model.}, 45(2):215–221, 2005. 
+\bibitem{article10}
+    \BibAuthor{Gerd Neudertand Gerhard Klebe}
+    \BibTitle{Fconv: Format conversion, manipulation and feature computation of molecular data}~//
+    \BibJournal{Bioinformatics}, 27(7):1021–1022, 2011.
+\bibitem{article11}
+    \BibAuthor{Matheus Froeyen and Piet Herdewijn}
+    \BibTitle{Correct bond order assignment in a molecular  framework using integer linear programming with application to molecules where only non-hydrogen atom coordinates are available}~//
+    \BibJournal{J. Chem. Inf. Model.}, 45(5):1267–1274, 2005.
+\bibitem{article12}
+    \BibAuthor{Sascha Urbaczek, Adrian Kolodzik, Inken Groth, Stefan Heuser, and Matthias Rarey}
+    \BibTitle{Reading pdb: Perception of molecules from 3d atomic coordinates}~//
+    \BibJournal{J. Chem. Inf. Model.}, 53(1):76–87, 2012.
+\bibitem{article13}
+    \BibAuthor{unmei Wang, Wei Wang, Peter A Kollman, and David A Case}
+    \BibTitle{Automatic atom type and bond type perception in molecular mechanical calculations}~//
+    \BibJournal{J. Mol. Graphics Modell.}, 25(2):247–260, 2006.
+\bibitem{article14}
+    \BibAuthor{Anna Katharina Dehof, Alexander Rurainski, Quang Bao Anh Bui, Sebastian Bocker, Hans-Peter Lenhof, and Andreas Hildebrandt}
+    \BibTitle{Automated bond order assignment as an optimization problem}~//
+    \BibJournal{Bioinformatics}, 27(5):619–625, 2011.
+\bibitem{article15}
+    \BibAuthor{Mathias Niepert, Mohamed Ahmed, Konstantin Kutzkov}
+    \BibTitle{Learning Convolutional Neural Networks for Graphs}~//
+    \BibJournal{}, 2016
+\bibitem{article16}
+    \BibAuthor{Steven Kearnes, Kevin McCloskey, Marc Berndl, Vijay Pande, Patrick Riley}
+    \BibTitle{Molecular Graph Convolutions: Moving Beyond Fingerprints}~//
+    \BibJournal{}, 2016
+\bibitem{article17}
+    \BibAuthor{Duvenaud DK, Maclaurin D, Iparraguirre J, Bombarell R, Hirzel T, Aspuru-Guzik A, Adams RP}
+    \BibTitle{Convolutional networks on graphs for learning molecular fingerprints}~//
+    \BibJournal{Advances in neural information processing systems, pp 2224–2232}, 2015
+\bibitem{article18}
+    \BibAuthor{Lusci A, Pollastri G, Baldi P}
+    \BibTitle{Deep architectures and deep learning in chemoinformatics: the prediction of aqueous solubility for drug-like molecules}~//
+    \BibJournal{J Chem Inf Model 53(7): 1563–1575}, 2013	
+\bibitem{article19}
+    \BibAuthor{Merkwirth C, Lengauer T }
+    \BibTitle{Automatic generation of complementary descriptors with molecular graph network}~//
+    \BibJournal{J Chem Inf Model 45(5):1159–1168}, 2005
+\bibitem{article20}
+    \BibAuthor{Zhenpeng Zhou, Xiaocheng Li}
+    \BibTitle{Convolution on Graph: A High-Order and Adaptive Approach}~//
+    \BibJournal{}, 2017
+\end{thebibliography}
+
+% Решение Программного Комитета:
+%\ACCEPTNOTE
+%\AMENDNOTE
+%\REJECTNOTE
+\end{document}
