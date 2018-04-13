@@ -19,6 +19,7 @@ struct problem
 {
 	int l, n;
 	double *y;
+    double *constant;
 	struct feature_node **x;
 	double bias;            /* < 0 if no bias term */
 };
