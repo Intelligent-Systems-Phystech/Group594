@@ -1,0 +1,186 @@
+Результаты экспериментов в liblinear.
+
+1) Ki_data (train: 60%, test: 40%) (C = 100)
+
+	a) L2-regularized logistic regression (primal) (-s 0 -c 1024)
+		
+		i) TRAIN (console):
+		
+		> time ./train -s 0 -c 1024 data/ki_train
+
+		>> iter  1 act 1.087e+07 pre 9.516e+06 delta 5.293e+02 f 1.679e+07 |g| 6.225e+04 CG   3
+		>> iter  2 act 1.813e+06 pre 1.475e+06 delta 5.293e+02 f 5.925e+06 |g| 1.630e+04 CG   3
+		>> iter  3 act 7.438e+05 pre 6.254e+05 delta 6.457e+02 f 4.112e+06 |g| 5.672e+03 CG   5
+		>> iter  4 act 1.492e+05 pre 1.269e+05 delta 6.457e+02 f 3.368e+06 |g| 2.149e+03 CG   4
+		>> iter  5 act 1.848e+04 pre 1.691e+04 delta 6.457e+02 f 3.219e+06 |g| 6.060e+02 CG   4
+		>> iter  6 act 5.500e+02 pre 5.412e+02 delta 6.457e+02 f 3.200e+06 |g| 9.321e+01 CG   4
+		>> real	1m43.481s
+		>> user	1m19.216s
+		>> sys	0m15.290s
+
+		ii) PREDICT (console):
+
+		> time ./predict data/ki_test ki_train.model data/ki_result
+
+		>> Accuracy = 96.0985% (15173/15789)
+		>> real	0m29.199s
+		>> user	0m27.180s
+		>> sys	0m1.426s
+
+		iii) RESULTS ON TEST DATASET (python)
+
+		Spearman:  SpearmanrResult(correlation=0.68356234628229917, pvalue=1.7725783590839373e-115)
+		Pearson:  (0.67049209677989263, 1.3800783330340288e-109)
+		R2:  -0.146462513968
+		MSE:  5.14020695231
+		
+		iv) RESULTS ON MASHA’S TESTS
+
+		-----------------------------------------------------------------------
+		Top 1_Native: 52    Top 1_Quality_1: 119   Top 1_Quality_2: 147   Top 1_Quality_3: 155    
+		Natives excluded Top 1_Quality_1: 101   Top 1_Quality_2: 134   Top 1_Quality_3: 146  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 2_Native: 86    Top 2_Quality_1: 146   Top 2_Quality_2: 165   Top 2_Quality_3: 174    
+		Natives excluded Top 2_Quality_1: 124   Top 2_Quality_2: 156   Top 2_Quality_3: 170  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 3_Native: 105   Top 3_Quality_1: 156   Top 3_Quality_2: 174   Top 3_Quality_3: 183    
+		Natives excluded Top 3_Quality_1: 135   Top 3_Quality_2: 167   Top 3_Quality_3: 178  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 1_Native: 0.267   Top 1_Quality_1: 0.610   Top 1_Quality_2: 0.754   Top 1_Quality_3: 0.795    
+		Natives excluded Top 1_Quality_1: 0.518   Top 1_Quality_2: 0.687   Top 1_Quality_3: 0.749  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 2_Native: 0.441   Top 2_Quality_1: 0.749   Top 2_Quality_2: 0.846   Top 2_Quality_3: 0.892    
+		Natives excluded Top 2_Quality_1: 0.636   Top 2_Quality_2: 0.800   Top 2_Quality_3: 0.872  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 3_Native: 0.538   Top 3_Quality_1: 0.800   Top 3_Quality_2: 0.892   Top 3_Quality_3: 0.938    
+		Natives excluded Top 3_Quality_1: 0.692   Top 3_Quality_2: 0.856   Top 3_Quality_3: 0.913  
+		-----------------------------------------------------------------------
+		(0.62794824769808866, 8.787377296954587e-23)
+
+
+	b) L2-regularized logistic regression (primal) + constan in exp
+
+		i) TRAIN (console):
+
+		> time ./train -s 0 data/ki_train
+		>> iter  1 act 7.497e+03 pre 7.507e+03 delta 1.224e+02 f 1.440e+05 |g| 1.227e+02 CG   1
+		>> iter  2 act 1.192e-01 pre 1.192e-01 delta 1.224e+02 f 1.365e+05 |g| 4.913e-01 CG   1
+		>> real	2m28.003s
+		>> user	1m15.162s
+		>> sys	0m48.008s
+
+		ii) PREDICT (console):
+
+		>time ./predict data/ki_test ki_train.model data/ki_result 
+
+		>> Accuracy = 93.5208% (14766/15789)
+		>> real	0m30.144s
+		>> user	0m27.677s
+		>> sys	0m1.539s
+
+		iii) RESULTS ON TEST DATASET (python)
+		
+		Spearman:  SpearmanrResult(correlation=0.69015191946932408, pvalue=1.4434995449354607e-118)
+		Pearson:  (0.68219302714172125, 7.5909374048635784e-115)
+		R2:  0.343886262877
+		MSE:  2.9417101318
+
+		iv) RESULTS ON MASHA’S TESTS
+
+		-----------------------------------------------------------------------
+		Top 1_Native: 4     Top 1_Quality_1: 42    Top 1_Quality_2: 74    Top 1_Quality_3: 101    
+		Natives excluded Top 1_Quality_1: 40    Top 1_Quality_2: 73    Top 1_Quality_3: 100  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 2_Native: 20    Top 2_Quality_1: 69    Top 2_Quality_2: 100   Top 2_Quality_3: 135    
+		Natives excluded Top 2_Quality_1: 63    Top 2_Quality_2: 98    Top 2_Quality_3: 134  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 3_Native: 25    Top 3_Quality_1: 88    Top 3_Quality_2: 126   Top 3_Quality_3: 150    
+		Natives excluded Top 3_Quality_1: 84    Top 3_Quality_2: 124   Top 3_Quality_3: 150  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 1_Native: 0.021   Top 1_Quality_1: 0.215   Top 1_Quality_2: 0.379   Top 1_Quality_3: 0.518    
+		Natives excluded Top 1_Quality_1: 0.205   Top 1_Quality_2: 0.374   Top 1_Quality_3: 0.513  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 2_Native: 0.103   Top 2_Quality_1: 0.354   Top 2_Quality_2: 0.513   Top 2_Quality_3: 0.692    
+		Natives excluded Top 2_Quality_1: 0.323   Top 2_Quality_2: 0.503   Top 2_Quality_3: 0.687  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 3_Native: 0.128   Top 3_Quality_1: 0.451   Top 3_Quality_2: 0.646   Top 3_Quality_3: 0.769    
+		Natives excluded Top 3_Quality_1: 0.431   Top 3_Quality_2: 0.636   Top 3_Quality_3: 0.769  
+		-----------------------------------------------------------------------
+		(0.68024054672003831, 7.7124207969554315e-28)
+
+	
+	c) L2-regularized L1-loss support vector classification (dual) (-s 3)
+		
+		i) TRAIN (console):
+		
+		> time ./train -s 3 data/ki_train
+
+		>> *
+		>> optimization finished, #iter = 5
+		>> Objective value = -17338.025839
+		>> nSV = 21766
+		>> real	1m41.368s
+		>> user	1m6.388s
+		>> sys	0m20.366s
+
+		ii) PREDICT (console):
+
+		> time ./predict data/ki_test ki_train.model data/ki_result
+
+		>> Accuracy = 94.3505% (14897/15789)
+		>> real	0m29.027s
+		>> user	0m26.952s
+		>> sys	0m1.488s
+
+		iii) RESULTS ON TEST DATASET (python)
+
+		Spearman:  SpearmanrResult(correlation=0.69166226720519497, pvalue=2.7519435180374767e-119)
+		Pearson:  (0.68399876227528322, 1.1131347687760896e-115)
+		R2:  0.349571970825
+		MSE:  2.91621805057
+
+		iv) RESULTS ON MASHA’S TESTS
+
+		-----------------------------------------------------------------------
+		Top 1_Native: 5     Top 1_Quality_1: 40    Top 1_Quality_2: 69    Top 1_Quality_3: 99     
+		Natives excluded Top 1_Quality_1: 37    Top 1_Quality_2: 68    Top 1_Quality_3: 98   
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 2_Native: 14    Top 2_Quality_1: 65    Top 2_Quality_2: 96    Top 2_Quality_3: 129    
+		Natives excluded Top 2_Quality_1: 63    Top 2_Quality_2: 95    Top 2_Quality_3: 128  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 3_Native: 22    Top 3_Quality_1: 81    Top 3_Quality_2: 117   Top 3_Quality_3: 146    
+		Natives excluded Top 3_Quality_1: 77    Top 3_Quality_2: 116   Top 3_Quality_3: 145  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 1_Native: 0.026   Top 1_Quality_1: 0.205   Top 1_Quality_2: 0.354   Top 1_Quality_3: 0.508    
+		Natives excluded Top 1_Quality_1: 0.190   Top 1_Quality_2: 0.349   Top 1_Quality_3: 0.503  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 2_Native: 0.072   Top 2_Quality_1: 0.333   Top 2_Quality_2: 0.492   Top 2_Quality_3: 0.662    
+		Natives excluded Top 2_Quality_1: 0.323   Top 2_Quality_2: 0.487   Top 2_Quality_3: 0.656  
+		-----------------------------------------------------------------------
+		-----------------------------------------------------------------------
+		Top 3_Native: 0.113   Top 3_Quality_1: 0.415   Top 3_Quality_2: 0.600   Top 3_Quality_3: 0.749    
+		Natives excluded Top 3_Quality_1: 0.395   Top 3_Quality_2: 0.595   Top 3_Quality_3: 0.744  
+		-----------------------------------------------------------------------
+		(0.68366561397492354, 3.3042246488035432e-28)
+
+	Best accuracy=96.0985% (15173/15789) (a)
+	Best correlation on test dataset: sperman_correlation=0.69166226720519497 (c)
+	Best r_2 on test dataset: R2=0.349571970825 (c)
+	Best MSE on test datset: MSE=2.91621805057 (c)
+	Masha’s dataset: Best Top 1_Native: 52 (a) 
+	Masha’s dataset: Best Top 1_Quality_3: 155 (a) 
+	
