@@ -126,7 +126,6 @@ double l2r_lr_fun::fun(double *w)
 	int i;
 	double f=0;
 	double *y=prob->y;
-    double *constant=prob->constant;
 	int l=prob->l;
 	int w_size=get_nr_variable();
 
@@ -137,7 +136,7 @@ double l2r_lr_fun::fun(double *w)
 	f /= 2.0;
 	for(i=0;i<l;i++)
 	{
-		double yz = y[i]*z[i] + constant[i];
+		double yz = y[i]*z[i];
 		if (yz >= 0)
 			f += C[i]*log(1 + exp(-yz));
 		else
@@ -151,13 +150,12 @@ void l2r_lr_fun::grad(double *w, double *g)
 {
 	int i;
 	double *y=prob->y;
-    double *constant=prob->constant;
 	int l=prob->l;
 	int w_size=get_nr_variable();
 
 	for(i=0;i<l;i++)
 	{
-		z[i] = 1/(1 + exp(-y[i]*z[i] - constant[i]));
+		z[i] = 1/(1 + exp(-y[i]*z[i]));
 		D[i] = z[i]*(1-z[i]);
 		z[i] = C[i]*(z[i]-1)*y[i];
 	}
@@ -2154,7 +2152,6 @@ static void group_classes(const problem *prob, int *nr_class_ret, int **label_re
 
 static void train_one(const problem *prob, const parameter *param, double *w, double Cp, double Cn)
 {
-    printf("static void train_one(const problem *prob...\n");
 	//inner and outer tolerances for TRON
 	double eps = param->eps;
 	double eps_cg = 0.1;
@@ -2174,7 +2171,6 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 	{
 		case L2R_LR:
 		{
-            printf("case L2R_LR\n");
 			double *C = new double[prob->l];
 			for(int i = 0; i < prob->l; i++)
 			{
@@ -2302,7 +2298,6 @@ static double calc_start_C(const problem *prob, const parameter *param)
 //
 model* train(const problem *prob, const parameter *param)
 {
-    printf("model* train(const problem *prob, const parameter *param)\n");
 	int i,j;
 	int l = prob->l;
 	int n = prob->n;
@@ -2318,7 +2313,6 @@ model* train(const problem *prob, const parameter *param)
 
 	if(check_regression_model(model_))
 	{
-        printf("    if(check_regression_model(model_)) -> true\n");
 		model_->w = Malloc(double, w_size);
 		for(i=0; i<w_size; i++)
 			model_->w[i] = 0;
@@ -2328,7 +2322,6 @@ model* train(const problem *prob, const parameter *param)
 	}
 	else
 	{
-        printf("    if(check_regression_model(model_)) -> false\n");
 		int nr_class;
 		int *label = NULL;
 		int *start = NULL;
@@ -2360,11 +2353,8 @@ model* train(const problem *prob, const parameter *param)
 
 		// constructing the subproblem
 		feature_node **x = Malloc(feature_node *,l);
-        double *constant = Malloc(double, l);
-        for(i=0;i<l;i++) {
+		for(i=0;i<l;i++)
 			x[i] = prob->x[perm[i]];
-            constant[i] = prob->constant[perm[i]];
-        }
 
 		int k;
 		problem sub_prob;
@@ -2372,17 +2362,13 @@ model* train(const problem *prob, const parameter *param)
 		sub_prob.n = n;
 		sub_prob.x = Malloc(feature_node *,sub_prob.l);
 		sub_prob.y = Malloc(double,sub_prob.l);
-        sub_prob.constant = Malloc(double,sub_prob.l);
 
-        for(k=0; k<sub_prob.l; k++) {
+		for(k=0; k<sub_prob.l; k++)
 			sub_prob.x[k] = x[k];
-            sub_prob.constant[k] = constant[k];
-        }
 
 		// multi-class svm by Crammer and Singer
 		if(param->solver_type == MCSVM_CS)
 		{
-            printf("        if(param->solver_type == MCSVM_CS) -> true\n");
 			model_->w=Malloc(double, n*nr_class);
 			for(i=0;i<nr_class;i++)
 				for(j=start[i];j<start[i]+count[i];j++)
@@ -2392,10 +2378,8 @@ model* train(const problem *prob, const parameter *param)
 		}
 		else
 		{
-            printf("        if(param->solver_type == MCSVM_CS) -> false\n");
 			if(nr_class == 2)
 			{
-                printf("            if(nr_class == 2) -> true\n");
 				model_->w=Malloc(double, w_size);
 
 				int e0 = start[0]+count[0];
@@ -2416,7 +2400,6 @@ model* train(const problem *prob, const parameter *param)
 			}
 			else
 			{
-                printf("            if(nr_class == 2) -> false\n");
 				model_->w=Malloc(double, w_size*nr_class);
 				double *w=Malloc(double, w_size);
 				for(i=0;i<nr_class;i++)

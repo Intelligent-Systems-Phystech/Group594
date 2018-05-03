@@ -84,7 +84,6 @@ static char* readline(FILE *input)
 
 void parse_command_line(int argc, char **argv, char *input_file_name, char *model_file_name);
 void read_problem(const char *filename);
-void read_constant(const char *filename);
 void do_cross_validation();
 void do_find_parameter_C();
 
@@ -107,9 +106,8 @@ int main(int argc, char **argv)
 
 	parse_command_line(argc, argv, input_file_name, model_file_name);
 	read_problem(input_file_name);
-    read_constant("./data/ki_train_constant");
 	error_msg = check_parameter(&prob,&param);
-    
+
 	if(error_msg)
 	{
 		fprintf(stderr,"ERROR: %s\n",error_msg);
@@ -449,60 +447,3 @@ void read_problem(const char *filename)
 
 	fclose(fp);
 }
-
-// read in a problem (in libsvm format)
-void read_constant(const char *filename)
-{
-    int max_index, inst_max_index, i;
-    size_t elements, j;
-    FILE *fp = fopen(filename,"r");
-    char *endptr;
-    char *idx, *val, *label;
-    
-    if(fp == NULL)
-    {
-        fprintf(stderr,"can't open input file %s\n",filename);
-        exit(1);
-    }
-    
-    elements = 0;
-    max_line_len = 1024;
-    line = Malloc(char,max_line_len);
-    while(readline(fp)!=NULL)
-    {
-        char *p = strtok(line," \t"); // label
-        
-        // features
-        while(1)
-        {
-            p = strtok(NULL," \t");
-            if(p == NULL || *p == '\n') // check '\n' as ' ' may be after the last feature
-                break;
-            elements++;
-        }
-        elements++; // for bias term
-    }
-    rewind(fp);
-    
-    prob.constant = Malloc(double,prob.l);
-    
-    max_index = 0;
-    j=0;
-    for(i=0;i<prob.l;i++)
-    {
-        inst_max_index = 0; // strtol gives 0 if wrong format
-        readline(fp);
-        label = strtok(line," \t\n");
-        if(label == NULL) // empty line
-            exit_input_error(i+1);
-        
-        prob.constant[i] = strtod(label,&endptr);
-        if(endptr == label || *endptr != '\0')
-            exit_input_error(i+1);
-    }
-    printf("constant[0]: %f\n", prob.constant[0]);
-    printf("constant[1]: %f\n", prob.constant[1]);
-    
-    fclose(fp);
-}
-

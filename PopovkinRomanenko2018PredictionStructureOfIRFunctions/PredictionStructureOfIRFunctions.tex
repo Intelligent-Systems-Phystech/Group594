@@ -1,0 +1,305 @@
+\documentclass[12pt,twoside]{article}
+\usepackage{jmlda}
+\usepackage{amsmath}
+
+\usepackage{graphicx}
+%\usepackage{subcaption}
+\usepackage{wrapfig}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+%\usepackage{algpseudocode}
+%\usepackage{algorithm}% http://ctan.org/pkg/algorithms
+%\usepackage[algcompatible]{algpseudocode}
+
+
+\NOREVIEWERNOTES
+
+\title
+    [Прогнозирование ранжирующих моделей для систем информационного поиска.]
+    {Прогнозирование ранжирующих моделей для систем информационного поиска.}
+\author 
+    {Поповкин~А.\,А., Романенко~И.\,И.} 
+\thanks
+    {
+   Научный руководитель:  Стрижов~В.\,В. 
+    Консультант:  Кулунчаков~А.\,О.}
+\email
+    {romanenko.ii@phystech.edu, popovkin.aa@phystech.edu}
+\organization
+    {Московский физико-технический институт (государственный университет), Москва}
+\abstract
+    {Рассматриваются методы порождения нелинейных моделей для задач регрессии. Исследуется пространство моделей, представимых в виде суперпозиции
+математических примитивов, предлагаемых экспертами. Предлагается метод, прогнозирующий структуру оптимальной модели для задачи регрессии. Структура модели представляется как последовательности вершин при DFS обходе синтаксического дерева. Предложенный метод прогнозирует ранжирующую модель для систем информационного поиска на примере текстовой коллекции TREC. Приводится сравнительный анализ полученных результатов с уже известными моделями.
+
+\bigskip
+\textbf{Ключевые слова}: \emph {информационный поиск, генетические алгоритмы, нейросети, структурное обучение}.}
+
+\begin{document}
+\maketitle
+\linenumbers
+
+\section{Введение}
+Решается задача ранжирования текстов по запросам пользователей. Решения данной задачи описаны в \cite{modern-ir, language-modeling, information-based}. При построении учитывались особенности запросов пользователей, однако эти модели сталкивались с проблемой переобучения.
+
+Модели высокого качества также были найдены с помощью алгоритма полного перебора. В работе \cite{space-ir-functions} такие модели рассматриваются как суперпозиции математических примитивов от основных характеристик текста --- частоты слова в документе --- (tf) и числа документов, в которых встречается слово --- (idf). Для моделей вводилась сложность модели — число элементов грамматики, используемых для их описания. Накладывались структурные и целевые ограничения. Лучшие модели, описанные в \cite{space-ir-functions}, превосходят по качеству на коллекциях TREC  модели из работ \cite{modern-ir, language-modeling, information-based}. Однако более детальное исследование пространства структурно сложных суперпозиций --- нетривиальная задача. 
+
+Одним из подходов к поиску оптимальной модели является генетический алгоритм. Он основан на идее итеративного отбора моделей, их скрещивания и мутаций. Первые попытки его использования были произведены в статьях \cite{Genetic-algorithms-in-search, Genetic-programming}. Производились поиски наилучших параметров генетического алгоритма. Как показано в \cite{Crossover-improvement, Probabilistic-and-genetic-algorithm}, оптимальный выбор операции кроссовера может существенно улучшить порождаемые модели.
+
+Основным преимуществом генетического алгоритма является гибкость порождаемых им моделей, что позволило в \cite{Personalization-of-search-engine,Generic-ranking-function-discovery} перейти к представлению ранжирующей модели ее деревом синтаксического разбора. Однако генетический алгоритм, описанный в \cite{Personalization-of-search-engine,Generic-ranking-function-discovery}, подвержен стагнации. После 30-40 итераций мутаций и кроссовера сложность порождаемых функций значительно возрастает и изменения в популяции становятся незначительными.
+
+Улучшения этого метода описаны в статье \cite{kulunchakov}, где благодаря использованию регуляризации функционала качества моделей, удается добиться улучшения разнообразия порождаемых функций, что ведет к повышению качества итоговой модели.
+
+В работе \cite{Varfolomeeva} рассматривается другой подход к аналитическому программированию. Предлагается использовать принципы глубокого обучения, разбивая задачу по уровням абстракции. В качестве промежуточного уровня предложено использовать матрицу вероятностей переходов в дереве разбора суперпозиции, полученную обучением нейронной сети. Далее, итоговая модель строится итеративным жадным алгоритмом.
+
+В данной работе предлагается альтернативная реализация генетического алгоритма со следующими изменениями: для увеличения разнообразия популяции предлагается каждые 5 эпох добавлять в популяцию случайную модель, в качестве мутаций изменять не функцию в узле, а целое поддерево, кроссовер проводится аналогичным образом, два объекта в популяции обмениваются случайными поддеревьями.
+
+В качестве основной новации рассматривается развитие идеи предсказания промежуточной мета-модели. Предлагается кластеризовать документы по значениям $\text{tf}\--\text{idf}$ подсчитанным по корпусу текста, исходя из предположения, что текст разбивается на кластеры, причем внутри кластера документы в при ранжировании будут находится близко.
+
+Работа построена следующим образом. Сначала ставится базовая постановка задачи прогнозирования модели, по исходной коллекции документов и запросов. Затем задача уточняется при кластеризации документов и создание мета-модели, являющейся линейной суммой моделей на кластерах. В конце проводится вычислительный эксперимент и сравниваются полученные результаты с уже известными моделями.
+
+\section{Базовая постановка задачи}
+
+Дана коллекция текстовых документов~$\textbf{C} = \{d_i\}$ и пользовательских запросов~$\textbf{Q}$, каждый из которых представляет из себя множество слов~$q = \{w_i\}$. Дана функция~$r(d, q) \rightarrow \{0, 1\}$, определенная экспертами, и показывающая, является ли данный документ~$d$ релевантным для запроса~$q$ (1~--- является).
+
+Рассмотрим две характеристики пары документ-слово:~$(d, w, \textbf{C}) \rightarrow (\text{tf}, \text{idf})$. Определенных следующим образом: 
+$$\text{idf}(w, \textbf{C}) = \frac{\text{count}(w, \textbf{C})}{|\textbf{C}|}$$
+$$\text{tf}(w, d, \textbf{C}) = freq(w, d) \cdot \log(1 + \frac{\text{size}_{\text{avg}}}{\text{size}(d)})$$
+где~$\text{count}(w, \textbf{C})$~--- количество документов $d \in \textbf{C}$ содержащих слово~$w$, $\text{freq}(w, d)$~--- частота вхождения слова~$w$ в документе~$d$, $\text{size}(d)$~--- количество слов в $d$, а~$\text{size}_{\text{avg}}$~--- среднее количество слов в документах из коллекции $C$.
+
+Положим~$f$~--- суперпозиция математических функций от аргументов tf и idf. Назовем моделью~--- дерево синтаксического разбора данной суперпозиции и рассмотрим множество всех таких деревьев~${\cal T}$.
+
+Будем аппроксимировать функцию~$r(d, q)$, как функцию~$f(d, q) = \sum_{w \in d} f'(\text{tf}, \text{idf})$, где~$f' \in {\cal T}$.
+
+Качеством аппроксимационной функции будем считать MAP (mean average precision).
+$$ \text{MAP}(f, \textbf{C}, \textbf{Q}) = \frac{1}{|\textbf{Q}|} \cdot \sum_{q \in Q}\text{AvgP}(f, q, \textbf{C})$$
+$$ \text{AvgP}(f, q, \textbf{C}) = \frac{\sum_{i=0}^{|C_q|}\text{PrefSum}(r(d_{(i)}, q), k) \cdot r(d_{(i)}, q)}{\sum_{d \in C_q}{r(d)}}$$
+Где~$C_q$~--- множество документов коллекции, размеченных для запроса~$q$,~$d_{(i)}$~---~$i$-ый документ из~$C_q$ в ряду, упорядоченному по убыванию значения~$f(d_{(i)}, q)$,~$\text{PrefSum}(r(d_{(i)}, q))$~---~сумма первых k элементов ряда~$\{r(d_{(i)}, q)\}$.
+
+Нашей задачей является нахождение ранжирующей функции 
+$$f^* = \argmax_{f\in{\cal T}} {\big( \text{MAP}(f, \textbf{C}, \textbf{Q}) - P(f)\big)}$$где~$P(f)$~--- штрафная функция, ограничивающая структурную сложность суперпозиции~$f$.
+
+\section{Постановка задачи на кластерах документов}
+
+Определим~$\text{tf}\--\text{idf}$~для всей коллекции документов способом аналогичным рассмотренному выше. Фактически рассмотрим отображение~$\mathit{V}~:~\textbf{C} \rightarrow \mathbb{R}^n$.~Где каждому документу сопоставляется вектор $\text{tf}\--\text{idf}$ представления всех слов в нем.
+
+
+Кластеризуем документы, используя их представление в пространстве~$\mathbb{R}^n$. Расстояние между документами считаем при помощи стандартной эвклидовой метрики.
+
+Получаем множество кластеров~$D = \{ d_i ~:~ d_i = \{ c_j \in C \} \}$,~$|D| = m$. Построим для каждого кластера семейство ранжирующих функций~$F_{d_i}^* = \{ f_i^1, \cdots, f_i^n \}$, используя генетический алгоритм. В каждом семействе выделим наилучшую ранжирующую функцию~$f_i^* \in F_{d_i}$.
+
+Определим ранжирующую функцию на кластерах:
+$$f^* = \argmax_{W \in \mathbb{R}^m} \big(\text{MAP}(\sum_i W_i * f_i^*, \textbf{C}, \textbf{Q}) - \sum_i P(f_i^*)\big) $$
+
+Оптимизацию весов $W$ будем производить при помощи поиска по сетке. 
+
+\section{Описание генетического алгоритма}
+При создании случайной суперпозиции генерируется случайное дерево малой глубины, при этом в каждом узле случайно выбирается одна из базовых операций. Так же выполняется случайное уменьшение глубины дерева. После данной процедуры получаются деревья из 15-30 узлов.
+
+В качестве операции кроссовера для двух объектах популяции используется обмен случайных двух узлов в деревьях суперпозиций. 
+
+\begin{center}
+\begin{algorithm}[h]
+\caption{Создание ранжирующией функции для коллекции документов}
+\begin{algorithmic} 
+\REQUIRE $N_{epoch},~\textbf{C}$
+\ENSURE $f^{*}$ \text{- наилучшая модель в итоговой популяции}
+
+\STATE $\triangleright$ \text{Сгенерировать начальную случайную популяцию $\cal T_{\text{0}}$}
+\REPEAT
+	\STATE $\triangleright$ \text{Выполнить кроссовер для случайной пары суперпозиций из $\cal T_{\text{i}}$}
+	\STATE $\triangleright$ \text{Мутировать случайную суперпозицию из $\cal T_{\text{i}}$}
+	\STATE $\triangleright$ \text{Отранжировать популяцию $\cal T_{\text{i}}$ согласно метрике MAP}
+	\STATE $\triangleright$ \text{Учитывая регуляризацию по числу вершин}
+	\STATE $\triangleright$ \text{Выбрать наилучшие суперпозиции, составить из них популяцию $\cal T_{\text{i+1}}$}
+	\STATE $\triangleright$ \text{Увеличить число пройденных эпох}
+\UNTIL{$epoch \neq N_{epoch}$}
+\end{algorithmic}
+\end{algorithm}
+\end{center}
+
+
+\section{Используемые данные}
+Для обучения и тестирования модели используется коллекция текстовых документов TREC \cite{Trec-dataset}. В частности коллекции Trec-5 -- Trec-8. Для каждой коллекции представлены набор запросов, ранжирование документов, проведенное экспертами экспертами, и сами документы, на которых решается задача информационного поиска. Основой каждой коллекции является набор документов, предоставляемых NIST, являющимся спонсором конференции TREC. В каждой коллекции представлено в среднем 500 000 документов, 100 запросов и порядка 2000 ответов для каждого запроса. Номер каждой коллекции непосредственно связан с номером конференции, на которой рассматривалась данная коллекция. 
+
+\section{Обработка данных}
+Обработка данных производилась средствами языка Python. Использовались стандартные библиотеки sklearn и nltk. Производилось удаление стоп-слов, соответствующих английскому языку, приведение их к начальной форме при помощи PorterStemmer'а. Для подсчета непосредственных значений~$\text{tf}$ использовался CountVectorizer, значение $\text{idf}$ вычислялось непосредственно согласно формулам выше.
+\begin{center}
+\begin{algorithm}[h]
+\caption{Вычисление~$\text{tf}\--\text{idf}$~по корпусу документов}
+\begin{algorithmic}
+\REQUIRE $\textbf{C}$
+\ENSURE $\text{tf}\--\text{idf}$
+\FOR {\text{каждого слова в коллекции документов $\textbf{C}$}}
+	\STATE $\triangleright$ \text{Удалить знаки препинания и служебные символы}
+	\STATE $\triangleright$ \text{Разделить текст на слова}
+	\STATE $\triangleright$ \text{Удалить стоп--слова}
+	\STATE $\triangleright$ \text{Выполнить стемминг каждого слова}
+\ENDFOR
+\STATE $\triangleright$ \text{Вычислить значения tf-idf по матрице слов для документов}
+\end{algorithmic}
+\end{algorithm}
+\end{center}
+
+\section{Базовый вычислительный эксперимент}
+Сначала был проведен эксперимент по исследованию качества популяции ранжирующих функций, генерируемых генетическим алгоритмом. В качестве основного был взят корпус документов TREC-7. Выборка была разделена на обучающую и валидационную в соотношении $80\%\--20\%$. Результаты обучения на данном корпусе приведены ниже. 
+\begin{center}
+\begin{figure}[!ht]
+\includegraphics[width=1\textwidth]{images/complexity_7_42_1_76.eps}
+\end{figure}
+\end{center}
+
+\begin{center}
+\begin{figure}[!ht]
+\includegraphics[width=1\textwidth]{images/map_test_whole_7_42_10_76.eps}
+\end{figure}
+\end{center}
+
+
+\begin{center}
+\begin{figure}[!ht]
+\includegraphics[width=1\textwidth]{images/map_train_test_7_42_1_76.eps}
+\end{figure}
+\end{center}
+
+\begin{center}
+\begin{figure}[!ht]
+\includegraphics[width=1\textwidth]{images/complexity_test_train_7_42.eps}
+\end{figure}
+\end{center}
+\newpage
+
+
+Отсюда видно, что генетический алгоритм начинает сильно переобучаться, что подтверждается при тестировании моделей обученных на TREC-7 на корпусе TREC-6.
+\begin{center}
+\begin{figure}[!ht]
+\includegraphics[width=1\textwidth]{images/trec6_trec7_7_42_10_76.eps}
+\end{figure}
+\end{center}
+~\newpage ~
+
+
+Так же приведена таблица сравнения с уже известными ранжирующими функциями сообщества. 
+
+Экспертные функции:
+$$f_1 = e^{\sqrt{\log(1 + \frac{\text{tf}}{\text{idf}})}}$$
+$$f_2 = \sqrt[4]{\frac{\text{tf}}{\text{idf}}}$$
+$$f_3 = \sqrt{\text{idf} + \sqrt{\frac{\text{tf}}{\text{idf}}}}$$
+
+Найденные наилучшие функции :
+$$h_5^* = \log \bigl(1 + \frac{\log(1 + \log(1 + \log(1 + \sqrt{\log(1 + \text{tf}) - \sqrt{\text{idf}})}))}{2 \cdot \text{idf}} \bigr)$$
+$$h_6^* = \sqrt{\frac{\sqrt[4]{\text{tf}}}{2\cdot \text{idf}}}$$
+$$h_7^* = \frac{\sqrt[8]{\log(1 + \text{tf})}}{\text{idf}}$$
+
+
+
+Результаты при сравнении на корпусах TREC-5, TREC-6, TREC-7.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline 
+Superposition & TREC-5 & TREC-6 & TREC-7 \\ 
+\hline 
+\multicolumn{4}{|c|}{Функции сообщества} \\ 
+\hline 
+$f_1$ & 8.785 & 13.715 & 10.038 \\ 
+\hline 
+$f_2$ & 8.908 & 13.615 & 9.905 \\ 
+\hline 
+$f_3$ & 8.908 & 13.615 & 9.905 \\ 
+\hline 
+\multicolumn{4}{|c|}{Найденные наилучшие функции} \\ 
+\hline 
+$h_5^*$ & \textbf{9.537} & 13.762 & 10.584 \\ 
+\hline 
+$h_6^*$ & 8.903 & \textbf{13.967} & 10.771 \\ 
+\hline 
+$h_7^*$ & 8.526 & 13.424 & \textbf{11.060} \\ 
+\hline 
+\end{tabular} 
+\end{center}
+
+
+\section{Вычислительный эксперимент при кластеризации данных}
+Так как кластеризация данного объема данных достаточно трудоемкая задача, был использован простой алгоритм K-means \cite{K-means-sklearn}. Количество кластеров, на которые разбивалась выборка было выбрано <TODO>.
+
+Результаты при кластеризации корпуса <TODO>.
+
+
+\section{Заключение}
+<TODO>
+
+
+\begin{thebibliography}{1}
+\bibitem{reading-in-ir}
+	\BibAuthor{Porter\; M. F.}
+	\BibTitle{Readings in Information Retrieval}~//
+	 Morgan Kaufmann Publishers Inc., San Francisco, CA, USA, 1997, Ch. An Algorithm for Suffix Stripping, Pp.\,313--316.
+\bibitem{markov-random-field}
+	\BibAuthor{Metzler, Donald and Croft, W. Bruce}
+	\BibTitle{A Markov Random Field Model for Term Dependencies}~//
+	Proceedings of the 28th Annual International ACM SIGIR Conference on Research and Development in Information Retrieval, SIGIR ’05, ACM, New York, NY, USA, 2005, pp. 472–479.
+\bibitem{probabilistic-models}
+    \BibAuthor{Amati, Gianni and Van Rijsbergen, Cornelis Joost}
+    \BibTitle{Probabilistic Models of Information Retrieval Based on Measuring the Divergence from Randomness}~//
+    ACM Trans. Inf. Syst. 20 (4) (2002) pp. 357–389
+\bibitem{modern-ir}
+    \BibAuthor{Salton, Gerard and McGill, Michael J.}
+    \BibTitle{Introduction to Modern Information Retrieval}~//
+    McGraw-Hill, Inc., New York, NY, USA, 1986
+\bibitem{language-modeling}
+    \BibAuthor{Ponte, Jay M. and Croft, W. Bruce}
+    \BibTitle{A Language Modeling Approach to Information Retrieval}~//
+    In Proceedings of the 21st Annual International ACM SIGIR Conference on Research and Development in Information Retrieval, pp. 275–281. ACM.
+\bibitem{information-based}
+    \BibAuthor{Clinchant, St{\'e}phane and Gaussier, Eric}
+    \BibTitle{Information-based Models for Ad Hoc IR}~//
+    In Proceedings of the 33rd Annual International ACM SIGIR Conference on Research and Development in Information Retrieval, pp. 234–241. ACM.
+\bibitem{space-ir-functions}
+    \BibAuthor{P. Goswami, S. Moura, E. Gaussier, M.-R. Amini, F. Maes}
+    \BibTitle{Exploring the space of ir functions}~//
+    ECIR’14, 2014, pp. 372–384.
+\bibitem{kulunchakov}
+    \BibAuthor{Kulunchakov A. S., Strijov V. V.}
+    \BibTitle{Generation of simple structured IR functions by genetic algorithm without stagnation}~//
+    \BibUrl{http://strijov.com/papers/Kulunchakov2014RankingBySimpleFun.pdf}
+\bibitem{Genetic-algorithms-in-search}
+    \BibAuthor{Goldberg, David E.}
+    \BibTitle{Genetic Algorithms in Search, Optimization and Machine Learning}~//
+    Addison-Wesley Longman Publishing Co., Inc., Boston, MA, USA, 1989.   
+\bibitem{Genetic-programming}
+    \BibAuthor{Koza, John R.}
+    \BibTitle{Genetic Programming: On the Programming of Computers by Means of Natural Selection}~//
+    MIT Press, Cambridge, MA, USA, 1992.   
+\bibitem{Crossover-improvement}
+    \BibAuthor{Vrajitoru, Dana}
+    \BibTitle{Crossover Improvement for the Genetic Algorithm in Information Retrieval}~//
+    Inf. Process. Manage. 34, 4 (July 1998), 405-415.    
+\bibitem{Probabilistic-and-genetic-algorithm}
+    \BibAuthor{Gordon, M.}
+    \BibTitle{Probabilistic and Genetic Algorithms in Document Retrieval}~//
+    Commun. ACM 31, 10 (October 1988), 1208-1218.    
+\bibitem{Personalization-of-search-engine}
+    \BibAuthor{Fan, Weiguo and Gordon, Michael D. and Pathak, Praveen}
+    \BibTitle{Personalization of Search Engine Services for Effective Retrieval and Knowledge Management}~//
+    In Proceedings of the twenty first international conference on Information systems (ICIS '00). Association for Information Systems, Atlanta, GA, USA, 20-34.
+\bibitem{Generic-ranking-function-discovery}
+    \BibAuthor{Fan, Weiguo and Gordon, Michael D. and Pathak, Praveen}
+    \BibTitle{A Generic Ranking Function Discovery Framework by Genetic Programming for Information Retrieval}~//
+     Inf. Process. Manage. 40, 4 (May 2004), 587-602.
+\bibitem{Varfolomeeva}
+    \BibAuthor{Варфаломеева А. А.}
+    \BibTitle{Методы структурного обучения для построения прогностических моделей}~//
+    \BibUrl{http://www.machinelearning.ru/wiki/images/f/f2/Varfolomeeva2013Diploma.pdf}
+\bibitem{Trec-dataset}
+    \BibTitle{Trec conference}~//
+    \BibUrl{https://trec.nist.gov/}
+\bibitem{K-means-sklearn}
+    \BibTitle{K-mean algorithm. Sklearn implementation}~//
+    \BibUrl{http://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html}
+\end{thebibliography}
+
+% Решение Программного Комитета:
+%\ACCEPTNOTE
+%\AMENDNOTE
+%\REJECTNOTE
+\end{document}
