@@ -63,7 +63,7 @@
 
 Рассмотрим две характеристики пары документ-слово:~$(d, w, \textbf{C}) \rightarrow (\text{tf}, \text{idf})$. Определенных следующим образом: 
 $$\text{idf}(w, \textbf{C}) = \frac{\text{count}(w, \textbf{C})}{|\textbf{C}|}$$
-$$\text{tf}(w, d, \textbf{C}) = freq(w, d) \cdot \log(1 + \frac{\text{size}_{\text{avg}}}{\text{size}(d)})$$
+$$\text{tf}(w, d, \textbf{C}) = freq(w, d) \cdot \log\left(1 + \frac{\text{size}_{\text{avg}}}{\text{size}(d)}\right)$$
 где~$\text{count}(w, \textbf{C})$~--- количество документов $d \in \textbf{C}$ содержащих слово~$w$, $\text{freq}(w, d)$~--- частота вхождения слова~$w$ в документе~$d$, $\text{size}(d)$~--- количество слов в $d$, а~$\text{size}_{\text{avg}}$~--- среднее количество слов в документах из коллекции $C$.
 
 Положим~$f$~--- суперпозиция математических функций от аргументов tf и idf. Назовем моделью~--- дерево синтаксического разбора данной суперпозиции и рассмотрим множество всех таких деревьев~${\cal T}$.
@@ -76,7 +76,7 @@ $$ \text{AvgP}(f, q, \textbf{C}) = \frac{\sum_{i=0}^{|C_q|}\text{PrefSum}(r(d_{(
 Где~$C_q$~--- множество документов коллекции, размеченных для запроса~$q$,~$d_{(i)}$~---~$i$-ый документ из~$C_q$ в ряду, упорядоченному по убыванию значения~$f(d_{(i)}, q)$,~$\text{PrefSum}(r(d_{(i)}, q))$~---~сумма первых k элементов ряда~$\{r(d_{(i)}, q)\}$.
 
 Нашей задачей является нахождение ранжирующей функции 
-$$f^* = \argmax_{f\in{\cal T}} {\big( \text{MAP}(f, \textbf{C}, \textbf{Q}) - P(f)\big)}$$где~$P(f)$~--- штрафная функция, ограничивающая структурную сложность суперпозиции~$f$.
+$$f^* = \argmax_{f\in{\cal T}} {\left( \text{MAP}(f, \textbf{C}, \textbf{Q}) - P(f)\right)}$$где~$P(f)$~--- штрафная функция, ограничивающая структурную сложность суперпозиции~$f$.
 
 \section{Постановка задачи на кластерах документов}
 
@@ -88,9 +88,9 @@ $$f^* = \argmax_{f\in{\cal T}} {\big( \text{MAP}(f, \textbf{C}, \textbf{Q}) - P(
 Получаем множество кластеров~$D = \{ d_i ~:~ d_i = \{ c_j \in C \} \}$,~$|D| = m$. Построим для каждого кластера семейство ранжирующих функций~$F_{d_i}^* = \{ f_i^1, \cdots, f_i^n \}$, используя генетический алгоритм. В каждом семействе выделим наилучшую ранжирующую функцию~$f_i^* \in F_{d_i}$.
 
 Определим ранжирующую функцию на кластерах:
-$$f^* = \argmax_{W \in \mathbb{R}^m} \big(\text{MAP}(\sum_i W_i * f_i^*, \textbf{C}, \textbf{Q}) - \sum_i P(f_i^*)\big) $$
+$$f^* = \argmax_{W \in \mathbb{R}^m} \left(\text{MAP}(\sum_i W_i * f_i^*, \textbf{C}, \textbf{Q}) - \sum_i P(f_i^*)\right) $$
 
-Оптимизацию весов $W$ будем производить при помощи поиска по сетке. 
+Оптимизацию весов $W$ будем производить при помощи поиска перебора. 
 
 \section{Описание генетического алгоритма}
 При создании случайной суперпозиции генерируется случайное дерево малой глубины, при этом в каждом узле случайно выбирается одна из базовых операций. Так же выполняется случайное уменьшение глубины дерева. После данной процедуры получаются деревья из 15-30 узлов.
@@ -230,18 +230,6 @@ $h_7^*$ & 8.526 & 13.424 & \textbf{11.060} \\
 
 
 \begin{thebibliography}{1}
-\bibitem{reading-in-ir}
-	\BibAuthor{Porter\; M. F.}
-	\BibTitle{Readings in Information Retrieval}~//
-	 Morgan Kaufmann Publishers Inc., San Francisco, CA, USA, 1997, Ch. An Algorithm for Suffix Stripping, Pp.\,313--316.
-\bibitem{markov-random-field}
-	\BibAuthor{Metzler, Donald and Croft, W. Bruce}
-	\BibTitle{A Markov Random Field Model for Term Dependencies}~//
-	Proceedings of the 28th Annual International ACM SIGIR Conference on Research and Development in Information Retrieval, SIGIR ’05, ACM, New York, NY, USA, 2005, pp. 472–479.
-\bibitem{probabilistic-models}
-    \BibAuthor{Amati, Gianni and Van Rijsbergen, Cornelis Joost}
-    \BibTitle{Probabilistic Models of Information Retrieval Based on Measuring the Divergence from Randomness}~//
-    ACM Trans. Inf. Syst. 20 (4) (2002) pp. 357–389
 \bibitem{modern-ir}
     \BibAuthor{Salton, Gerard and McGill, Michael J.}
     \BibTitle{Introduction to Modern Information Retrieval}~//
@@ -258,10 +246,6 @@ $h_7^*$ & 8.526 & 13.424 & \textbf{11.060} \\
     \BibAuthor{P. Goswami, S. Moura, E. Gaussier, M.-R. Amini, F. Maes}
     \BibTitle{Exploring the space of ir functions}~//
     ECIR’14, 2014, pp. 372–384.
-\bibitem{kulunchakov}
-    \BibAuthor{Kulunchakov A. S., Strijov V. V.}
-    \BibTitle{Generation of simple structured IR functions by genetic algorithm without stagnation}~//
-    \BibUrl{http://strijov.com/papers/Kulunchakov2014RankingBySimpleFun.pdf}
 \bibitem{Genetic-algorithms-in-search}
     \BibAuthor{Goldberg, David E.}
     \BibTitle{Genetic Algorithms in Search, Optimization and Machine Learning}~//
@@ -286,6 +270,10 @@ $h_7^*$ & 8.526 & 13.424 & \textbf{11.060} \\
     \BibAuthor{Fan, Weiguo and Gordon, Michael D. and Pathak, Praveen}
     \BibTitle{A Generic Ranking Function Discovery Framework by Genetic Programming for Information Retrieval}~//
      Inf. Process. Manage. 40, 4 (May 2004), 587-602.
+\bibitem{kulunchakov}
+    \BibAuthor{Kulunchakov A. S., Strijov V. V.}
+    \BibTitle{Generation of simple structured IR functions by genetic algorithm without stagnation}~//
+    \BibUrl{http://strijov.com/papers/Kulunchakov2014RankingBySimpleFun.pdf}
 \bibitem{Varfolomeeva}
     \BibAuthor{Варфаломеева А. А.}
     \BibTitle{Методы структурного обучения для построения прогностических моделей}~//
@@ -296,6 +284,20 @@ $h_7^*$ & 8.526 & 13.424 & \textbf{11.060} \\
 \bibitem{K-means-sklearn}
     \BibTitle{K-mean algorithm. Sklearn implementation}~//
     \BibUrl{http://scikit-learn.org/stable/modules/generated/sklearn.cluster.KMeans.html}
+
+%\bibitem{reading-in-ir}
+%	\BibAuthor{Porter\; M. F.}
+%	\BibTitle{Readings in Information Retrieval}~//
+%	 Morgan Kaufmann Publishers Inc., San Francisco, CA, USA, 1997, Ch. An Algorithm for Suffix Stripping, Pp.\,313--316.
+%\bibitem{markov-random-field}
+%	\BibAuthor{Metzler, Donald and Croft, W. Bruce}
+%	\BibTitle{A Markov Random Field Model for Term Dependencies}~//
+%	Proceedings of the 28th Annual International ACM SIGIR Conference on Research and Development in Information Retrieval, SIGIR ’05, ACM, New York, NY, USA, 2005, pp. 472–479.
+%\bibitem{probabilistic-models}
+%    \BibAuthor{Amati, Gianni and Van Rijsbergen, Cornelis Joost}
+%    \BibTitle{Probabilistic Models of Information Retrieval Based on Measuring the Divergence from Randomness}~//
+%    ACM Trans. Inf. Syst. 20 (4) (2002) pp. 357–389
+
 \end{thebibliography}
 
 % Решение Программного Комитета:
