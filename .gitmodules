@@ -1,0 +1,6 @@
+[submodule "PopovkinRomanenko2018PredictionStructureOfIRFunctions/code"]
+	path = PopovkinRomanenko2018PredictionStructureOfIRFunctions/code
+	url = https://github.com/IlRomanenko/Information-retrieval
+[submodule "PopovkinRomanenko2018PredictionStructureOfIRFunctions/kulunchakov"]
+	path = PopovkinRomanenko2018PredictionStructureOfIRFunctions/kulunchakov
+	url = https://github.com/KuluAndrej/Generation-of-simple-structured-IR-functions-by-genetic-algorithm-without-stagnation
